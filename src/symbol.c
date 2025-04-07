@@ -88,6 +88,9 @@ void sVal(char* a, int* indices, float value, char* value2)
                             n->data.stringValue = strdup(value2);
                         }
                         break;
+                    case TYPE_BOOL:
+                        n->data.intValue = (int)value;
+                        break;
                     default:
                         break;
                 }
@@ -110,11 +113,14 @@ void sVal(char* a, int* indices, float value, char* value2)
                         }
                         break;
                     case TYPE_STRING:
-                        if (value2) 
+                        if (value2)
                         {
-                            free(n->data.stringValue);
+                            free(n->data.stringArray[index]);
                             n->data.stringArray[index] = strdup(value2);
                         }
+                        break;
+                    case TYPE_BOOL:
+                        n->data.intArray[index] = (int)value;
                         break;
                     default:
                         break;
@@ -129,11 +135,22 @@ void sVal(char* a, int* indices, float value, char* value2)
 int getIndex(int* indices, int* dimensions, int numDimensions) 
 {
     int index = 0;
-    int multiplier = 1;
-    for (int i = numDimensions - 1; i >= 0; i--) 
+    int* multiplier = (int*)malloc(sizeof(int) * numDimensions);
+
+    multiplier[0] = 1;
+
+    for(int i = 1; i < numDimensions; i++)
     {
-        index += indices[i] * multiplier;
-        multiplier *= dimensions[i];
+        multiplier[i] = dimensions[i-1]*multiplier[i-1];
+    }
+    for (int i = 0; i < numDimensions; i++)
+    {
+        if(indices[i] >= dimensions[i])
+        {
+            printf("Array Out of Range!!!\n");
+            exit(1);
+        }
+        index += indices[i] * multiplier[i];
     }
     return index;
 }
@@ -196,6 +213,9 @@ void printSym()
             case TYPE_INT:
                 printf("int\t");
                 break;
+            case TYPE_BOOL:
+                printf("bool\t");
+                break;
             case TYPE_FLOAT:
                 printf("float\t");
                 break;
@@ -212,34 +232,41 @@ void printSym()
         if (n->isArray) 
         {
             printf("Yes\t[");
-            for (int i = 0; i < n->numDimensions; i++) 
+            for (int i = 0; i < n->numDimensions; i++)
             {
                 printf("%d", n->dimensions[i]);
                 if (i < n->numDimensions - 1) printf(", ");
             }
-            printf("]\t");
+            printf("]\t\t");
 
-            int index = getIndex(n->dimensions, n->dimensions, n->numDimensions);
-            
-            if (n->numDimensions == 1) printf("\t");
+            int i = 0, index = 1;
+            while(i < n->numDimensions){
+                index *= n->dimensions[i++];
+            }
 
-            for (int i = 0; i < index; i++) 
+            if(n->numDimensions > 1) printf("\n\t\t\t\t\t");
+
+            for (int i = 0; i < index; i++)
             {
                 switch (n->type) 
                 {
                     case TYPE_INT:
-                        printf("%d ", n->data.intArray[i]);
+                        printf("%d", n->data.intArray[i]);
+                        break;
+                    case TYPE_BOOL:
+                        printf("%c\n", (n->data.intValue != 0) ? 'T' : 'F');
                         break;
                     case TYPE_FLOAT:
-                        printf("%f ", n->data.floatArray[i]);
+                        printf("%f", n->data.floatArray[i]);
                         break;
                     case TYPE_CHAR:
-                        printf("%c ", n->data.charArray[i]);
+                        printf("%c", n->data.charArray[i]);
                         break;
                     case TYPE_STRING:
-                        printf("%s ", n->data.stringArray[i]);
+                        printf("%s", n->data.stringArray[i]);
                         break;
                 }
+                if(i < index-1) printf(", ");
                 if (n->numDimensions > 1 && (i+1) % ((index+1)/n->dimensions[0]) == 0) printf("\n\t\t\t\t\t");
             }
         }
@@ -250,6 +277,9 @@ void printSym()
             {
                 case TYPE_INT:
                     printf("\t\t%d", n->data.intValue);
+                    break;
+                case TYPE_BOOL:
+                    printf("\t\t%c", (n->data.intValue != 0) ? 'T' : 'F');
                     break;
                 case TYPE_FLOAT:
                     printf("\t\t%f", n->data.floatValue);

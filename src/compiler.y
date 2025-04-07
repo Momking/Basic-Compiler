@@ -60,13 +60,13 @@ extern int yy_flex_debug;
 %token T F
 %token MAIN RETURN
 
-%left '<' '>'
-%left EQUALEQUAL LESSTHANOREQUAL GREATERTHANOREQUAL NOTEQUAL
+%left LOGICAL_OR
+%left LOGICAL_AND
+%left LOGICAL_NOT
+%left EQUALEQUAL LESSTHANOREQUAL GREATERTHANOREQUAL NOTEQUAL '<' '>'
 %left '+' '-'
-%left '*' '/'
-%left '%'
-%left LOGICAL_AND LOGICAL_OR
-%left LOGICAL_NOT BREAK
+%left '*' '/' '%'
+%left BREAK
 
 %type<node> Gid assign_stmt expr var_expr str_expr Gdecl Gdecl_list Gdecl_sec Glist stmt_list statement Prog write_stmt cond_stmt while_stmt Gdim dim_expr;
 
@@ -89,6 +89,7 @@ extern int yy_flex_debug;
 		|		T_FLOAT Glist ';'			 { 	$$ = createNode("FLOAT", "floatDec", $2, NULL, 0, NULL);	checkFun($2, TYPE_FLOAT); 	}
 		|		T_CHAR Glist ';'			 { 	$$ = createNode("CHAR", "charDec", $2, NULL, 0, NULL);		checkFun($2, TYPE_CHAR); 	}
 		|		T_STRING Glist ';'			 { 	$$ = createNode("STRING", "strDec", $2, NULL, 0, NULL);		checkFun($2, TYPE_STRING); 	}
+		|		T_BOOL Glist ';'			 {	$$ = createNode("BOOL", "intDec", $2, NULL, 0, NULL);		checkFun($2, TYPE_BOOL);  	}
 		;
 		
 	Glist 	:	Gid							 {  $$ = $1;	 				}
@@ -99,7 +100,7 @@ extern int yy_flex_debug;
 		|	VAR Gdim						 {  $$ = createNode($1, "array", NULL, $2, 0, NULL);   	}
 		;
 
-	Gdim:									 {	$$ = NULL; 										}
+	Gdim:									 {	$$ = NULL; 											}
 		|	'[' NUM ']' Gdim				 {	$$ = createNode("NUM", "int", $4, NULL, $2, NULL); 	}
 
 	stmt_list:	/* NULL */					 {  $$ = NULL;				 			}
@@ -147,8 +148,12 @@ extern int yy_flex_debug;
 
 	expr	:	NUM 						{ 	$$ = createNode("NUM", "int", NULL, NULL, $1, NULL);  				}
 		|	'-' NUM							{  	$$ = createNode("NUM", "int", NULL, NULL, -$2, NULL);				}
+		|	FLOAT							{	$$ = createNode("FLOAT", "float", NULL, NULL, $1, NULL);			}
+		|	'-' FLOAT						{	$$ = createNode("FLOAT", "float", NULL, NULL, -$2, NULL);			}
 		|	STR								{	$$ = createNode($1, "string", NULL, NULL, 0, $1);					}
 		|	CHAR							{	char temp[2] = {$1, '\0'}; $$ = createNode(temp, "char", NULL, NULL, 0, temp);}
+		|	T								{	$$ = createNode("T", "int", NULL, NULL, 1, NULL);					}
+		|	F								{	$$ = createNode("F", "int", NULL, NULL, 0, NULL);					}
 		|	var_expr						{ 	$$ = $1;															}
 		|	'(' expr ')'					{  	$$ = $2;															}
 		|	expr '+' expr 					{ 	$$ = createNode("+", "op", NULL, $1, 0, NULL); $1->sibling = $3;	}

@@ -238,6 +238,8 @@ eval* handleComparisonOp(eval* left_val, eval* right_val, const char* op)
         else if (strcmp(op, "<=") == 0) result = (left_val->data.intValue <= right_val->data.intValue);
         else if (strcmp(op, ">") == 0) result = (left_val->data.intValue > right_val->data.intValue);
         else if (strcmp(op, ">=") == 0) result = (left_val->data.intValue >= right_val->data.intValue);
+		else if (strcmp(op, "&&") == 0) result = (left_val->data.intValue && right_val->data.intValue);
+		else if (strcmp(op, "||") == 0) result = (left_val->data.intValue || right_val->data.intValue);
     }
 
     if ((left_val->type == TYPE_FLOAT || left_val->type == TYPE_INT) &&
@@ -252,6 +254,8 @@ eval* handleComparisonOp(eval* left_val, eval* right_val, const char* op)
         else if (strcmp(op, "<=") == 0) result = (left <= right);
         else if (strcmp(op, ">") == 0) result = (left > right);
         else if (strcmp(op, ">=") == 0) result = (left >= right);
+		else if (strcmp(op, "&&") == 0) result = (left && right);
+		else if (strcmp(op, "||") == 0) result = (left || right);
     }
 
     freeEval(left_val);
@@ -287,6 +291,8 @@ eval* evaluate(node* root)
                 return createStringEval(sym->data.stringValue);
             case TYPE_CHAR:
                 return createCharEval(sym->data.charValue);
+			case TYPE_BOOL:
+                return createIntEval(sym->data.intValue);
         }
     }
 	if (root->type == NODE_STRING)
@@ -324,6 +330,8 @@ eval* evaluate(node* root)
                 return createStringEval(sym->data.stringArray[index]);
             case TYPE_CHAR:
                 return createStringEval(&sym->data.charArray[index]);
+			case TYPE_BOOL:
+                return createIntEval(sym->data.intArray[index]);
         }
     }
 
@@ -345,7 +353,9 @@ eval* evaluate(node* root)
             strcmp(root->varName, "<") == 0 ||
             strcmp(root->varName, "<=") == 0 ||
             strcmp(root->varName, ">") == 0 ||
-            strcmp(root->varName, ">=") == 0) 
+            strcmp(root->varName, ">=") == 0 ||
+			strcmp(root->varName, "&&") == 0 ||
+			strcmp(root->varName, "||") == 0) 
 		{
             return handleComparisonOp(left_val, right_val, root->varName);
         }
@@ -421,6 +431,10 @@ void assignStmt(node* s)
 			char* value4 = evaluate(s->child->sibling)->data.stringValue;
 			sVal(temp->name, NULL, 0, value4);
 			break;
+		case TYPE_BOOL:
+			int value5 = evaluate(s->child->sibling)->data.intValue;
+			sVal(temp->name, NULL, (float)value5, NULL);
+			break;
 		default:
 			break;
 		}
@@ -433,7 +447,6 @@ void assignStmt(node* s)
 		while(temp2 != NULL)
 		{
 			indices[i++] = evaluate(temp2)->data.intValue;
-			printf("hhaaaa %s\n",temp2->varName);
 			temp2 = temp2->sibling;
 		}
 		switch (temp->type)
@@ -453,6 +466,10 @@ void assignStmt(node* s)
 		case TYPE_STRING:
 			char* value4 = evaluate(s->child->sibling)->data.stringValue;
 			sVal(temp->name, indices, 0, value4);
+			break;
+		case TYPE_BOOL:
+			int value5 = evaluate(s->child->sibling)->data.intValue;
+			sVal(temp->name, indices, (float)value5, NULL);
 			break;
 		default:
 			break;
@@ -565,11 +582,7 @@ void print_tree(node* t)
     count_children(t);
 	printf("\n==================================================================\n");
 
-	printf("\nTree like structure 1:\n");
-	print_level2(t, a, maxNode);
-	printf("\n==================================================================\n");
-
-	printf("\nTree like structure 2:\n\n");
+	printf("\nTree like structure:\n\n");
 	print_level(t, 0, 1);
 	printf("\n==================================================================\n");
 

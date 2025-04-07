@@ -11,6 +11,7 @@ typedef enum {
     TYPE_CHAR,
     TYPE_STRING,
     TYPE_UNDEFINED,
+    TYPE_BOOL,
 } DataType;
 
 typedef struct symbol {
